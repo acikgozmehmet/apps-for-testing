@@ -1,0 +1,11 @@
+# Test outputs
+reports/
+results/
+*.log
+*.jtl
+node_modules/
+.venv/
+__pycache__/
+target/
+.idea/
+.vscode/

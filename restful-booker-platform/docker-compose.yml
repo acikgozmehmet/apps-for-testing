@@ -1,0 +1,102 @@
+# Restful Booker Platform - local deployment using the author's prebuilt images.
+# Service names must stay as-is: the images resolve each other via these hostnames.
+
+x-api: &api
+  restart: unless-stopped
+
+x-health: &health
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 40s
+
+services:
+  rbp-auth:
+    <<: *api
+    image: mwinteringham/restfulbookerplatform_auth:${RBP_TAG:-latest}
+    environment:
+      dbRefresh: ${RBP_DB_REFRESH:-0}
+      # The prod profile points Swagger at the public demo's /api/auth proxy path; use the direct one
+      SPRINGDOC_SWAGGERUI_CONFIGURL: /auth/v3/api-docs/swagger-config
+      SPRINGDOC_SWAGGERUI_URL: /auth/v3/api-docs
+    ports: ["3004:3004"]
+    healthcheck:
+      <<: *health
+      test: ["CMD", "wget", "-qO-", "http://localhost:3004/auth/actuator/health"]
+
+  rbp-booking:
+    <<: *api
+    image: mwinteringham/restfulbookerplatform_booking:${RBP_TAG:-latest}
+    environment:
+      dbRefresh: ${RBP_DB_REFRESH:-0}
+      # The prod profile points Swagger at the public demo's /api/booking proxy path; use the direct one
+      SPRINGDOC_SWAGGERUI_CONFIGURL: /booking/v3/api-docs/swagger-config
+      SPRINGDOC_SWAGGERUI_URL: /booking/v3/api-docs
+    ports: ["3000:3000"]
+    healthcheck:
+      <<: *health
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/booking/actuator/health"]
+
+  rbp-room:
+    <<: *api
+    image: mwinteringham/restfulbookerplatform_room:${RBP_TAG:-latest}
+    environment:
+      dbRefresh: ${RBP_DB_REFRESH:-0}
+      # The prod profile points Swagger at the public demo's /api/room proxy path; use the direct one
+      SPRINGDOC_SWAGGERUI_CONFIGURL: /room/v3/api-docs/swagger-config
+      SPRINGDOC_SWAGGERUI_URL: /room/v3/api-docs
+    ports: ["3001:3001"]
+    healthcheck:
+      <<: *health
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/room/actuator/health"]
+
+  rbp-branding:
+    <<: *api
+    image: mwinteringham/restfulbookerplatform_branding:${RBP_TAG:-latest}
+    environment:
+      dbRefresh: ${RBP_DB_REFRESH:-0}
+      # The prod profile points Swagger at the public demo's /api/branding proxy path; use the direct one
+      SPRINGDOC_SWAGGERUI_CONFIGURL: /branding/v3/api-docs/swagger-config
+      SPRINGDOC_SWAGGERUI_URL: /branding/v3/api-docs
+    ports: ["3002:3002"]
+    healthcheck:
+      <<: *health
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/branding/actuator/health"]
+
+  rbp-report:
+    <<: *api
+    image: mwinteringham/restfulbookerplatform_report:${RBP_TAG:-latest}
+    environment:
+      dbRefresh: ${RBP_DB_REFRESH:-0}
+      # The prod profile points Swagger at the public demo's /api/report proxy path; use the direct one
+      SPRINGDOC_SWAGGERUI_CONFIGURL: /report/v3/api-docs/swagger-config
+      SPRINGDOC_SWAGGERUI_URL: /report/v3/api-docs
+    ports: ["3005:3005"]
+    healthcheck:
+      <<: *health
+      test: ["CMD", "wget", "-qO-", "http://localhost:3005/report/actuator/health"]
+
+  rbp-message:
+    <<: *api
+    image: mwinteringham/restfulbookerplatform_message:${RBP_TAG:-latest}
+    environment:
+      dbRefresh: ${RBP_DB_REFRESH:-0}
+      # The prod profile points Swagger at the public demo's /api/message proxy path; use the direct one
+      SPRINGDOC_SWAGGERUI_CONFIGURL: /message/v3/api-docs/swagger-config
+      SPRINGDOC_SWAGGERUI_URL: /message/v3/api-docs
+    ports: ["3006:3006"]
+    healthcheck:
+      <<: *health
+      test: ["CMD", "wget", "-qO-", "http://localhost:3006/message/actuator/health"]
+
+  rbp-assets:
+    image: mwinteringham/restfulbookerplatform_assets:${RBP_TAG:-latest}
+    restart: unless-stopped
+    ports: ["${RBP_WEB_PORT:-3003}:80"]
+    depends_on:
+      rbp-auth: { condition: service_healthy }
+      rbp-booking: { condition: service_healthy }
+      rbp-room: { condition: service_healthy }
+      rbp-branding: { condition: service_healthy }
+      rbp-report: { condition: service_healthy }
+      rbp-message: { condition: service_healthy }

@@ -1,0 +1,42 @@
+# ParaBank - local app under test (functional + performance testing)
+# Image: official Parasoft build, pinned by digest for reproducible test runs.
+# To upgrade: docker pull parasoft/parabank:latest, then update the digest below.
+services:
+  parabank:
+    image: parasoft/parabank@sha256:5343aebd0bd2dbcc26fd41903a4271fb9b2ff19436c712dd9041a43782459b0f
+    container_name: parabank
+    ports:
+      - "8080:8080"   # Web UI, REST (/services/bank) and SOAP (/services/ParaBank)
+      - "9001:9001"   # Embedded HSQLDB (direct DB checks)
+      - "61616:61616" # ActiveMQ JMS (loan processor)
+    restart: unless-stopped
+    # Tomcat + HSQLDB can need >10s (Docker's default) to shut down cleanly;
+    # being SIGKILLed mid-write risks corrupting the file-based DB.
+    stop_grace_period: 30s
+    # Fixed resources so performance baselines are comparable between runs.
+    cpus: "4"
+    mem_limit: 4g
+    healthcheck:
+      # Image has no curl/wget; use bash's /dev/tcp to issue an HTTP request.
+      # Probe about.htm, NOT index.htm: index.htm without a session redirects to
+      # initializeDB.htm, which would reset the DB on every check.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /parabank/about.htm HTTP/1.0\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q ' 200 '"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # One-shot seeder: a fresh ParaBank container starts with an EMPTY database
+  # (no tables). This runs cleanDB + initializeDB once the app is healthy.
+  parabank-init:
+    image: curlimages/curl:8.10.1
+    depends_on:
+      parabank:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        curl -fsS -X POST http://parabank:8080/parabank/services/bank/cleanDB &&
+        curl -fsS -X POST http://parabank:8080/parabank/services/bank/initializeDB &&
+        echo 'ParaBank DB seeded'

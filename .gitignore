@@ -1,0 +1,9 @@
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Test outputs
+*.log
+reports/
+results/
