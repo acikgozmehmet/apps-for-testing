@@ -44,3 +44,13 @@ curl -H 'Accept: application/json' http://localhost:8080/parabank/services/bank/
 - The container is limited to 4 CPUs / 4 GB (`docker-compose.yml`) so performance baselines are comparable between runs. Change both together and record the values with your results.
 - The image is pinned by digest. To upgrade, run `docker pull parasoft/parabank:latest` and update the digest.
 - Without a session, `index.htm` redirects to `initializeDB.htm`, which **resets the DB**. Keep that in mind for load scripts and monitors that hit the home page without cookies.
+
+
+## Local App Under Test Credentials 
+### ParaBank - UI
+UI_BASE_URL=http://localhost:8080/parabank/
+UI_USERNAME=john
+UI_PASSWORD=demo
+
+### ParaBank - API
+API_BASE_URL=http://localhost:8080/parabank/services/bank
